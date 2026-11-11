@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="Losuj postać raz dziennie.">
+<link rel="manifest" href="manifest.json">
+<title>Losowacz postaci</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#151d31;--panel2:#1d2942;--line:#2d3b59;--txt:#f4f6fb;--muted:#aab6cc;--accent:#9b8cff;--accent2:#6fe0c0;--danger:#ff7185}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1a2440 0,var(--bg) 58%);color:var(--txt);font:16px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px max(18px,env(safe-area-inset-left));max-width:1000px;margin:auto}
+h1{font-size:clamp(23px,5vw,34px);margin:0;letter-spacing:-.7px}h2{font-size:20px;margin:0 0 14px}
+main{max-width:1000px;margin:0 auto;padding:8px 18px 40px}
+.panel{background:linear-gradient(145deg,var(--panel),#111a2c);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 14px 45px #0004;margin:14px 0}
+.muted{color:var(--muted)}button,.filelabel{border:0;border-radius:13px;padding:12px 17px;font-weight:700;font-size:15px;background:var(--accent);color:#100d24;cursor:pointer}
+button.secondary,.filelabel.secondary{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+button.danger{background:#492536;color:#ffdce2;border:1px solid #824256}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,textarea{width:100%;background:#0d1526;color:var(--txt);border:1px solid var(--line);border-radius:11px;padding:11px 12px;font:inherit}
+textarea{min-height:75px;resize:vertical}label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row .fit{flex:0 0 auto}
+#editor,#app{display:none}.hero{text-align:center;padding:26px 12px}.hero .status{color:var(--accent2);font-weight:700}
+#result{min-height:300px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:12px}
+#result img{max-width:min(70vw,300px);max-height:300px;object-fit:contain;border-radius:18px;box-shadow:0 15px 50px #0008}
+#result h2{font-size:28px;margin:5px 0}.empty{padding:30px;color:var(--muted)}
+#countdown{font-variant-numeric:tabular-nums;font-size:20px;font-weight:800;color:var(--accent2)}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.item{background:#0e1729;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;gap:12px;min-width:0}
+.item img{width:74px;height:88px;object-fit:cover;border-radius:10px;background:#26334d}
+.item .meta{min-width:0;flex:1}.item strong{display:block;overflow-wrap:anywhere}.item p{font-size:13px;color:var(--muted);margin:4px 0}.small{font-size:12px;color:var(--muted)}
+#drawBtn{font-size:19px;padding:16px 34px;background:linear-gradient(120deg,#a99cff,#72e5c5);box-shadow:0 8px 28px #8d7dff35}
+.spinning{animation:pulse .22s infinite alternate;filter:blur(1px)}@keyframes pulse{from{transform:scale(.96) rotate(-2deg)}to{transform:scale(1.04) rotate(2deg)}}
+.notice{padding:12px;border-radius:12px;background:#282442;color:#dcd5ff;font-size:14px}
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(max-width:520px){.panel{padding:16px;border-radius:18px}.hero{padding:15px 4px}header{padding-top:14px}}
+</style>
+</head>
+<body>
+<header><h1>✦ Losowacz postaci</h1><button class="secondary fit" id="editTop">⚙ Edytuj</button></header>
+<main>
+<section id="editor" class="panel">
+  <h2 id="editorTitle">Konfiguracja postaci</h2>
+  <p class="muted">Dodaj postacie, wybierz ich obrazki i ustaw wagę losowania. Większa liczba oznacza większą szansę.</p>
+  <div class="notice">To jest tryb edycji. Zapisane postacie i blokada losowania pozostają na tym urządzeniu, także po zamknięciu aplikacji.</div>
+  <div class="row">
+    <div><label for="name">Nazwa postaci</label><input id="name" maxlength="70" placeholder="Np. Yeta"></div>
+    <div><label for="chance">Szansa / waga</label><input id="chance" type="number" min="0.01" step="0.01" value="1"></div>
+  </div>
+  <label for="desc">Opis</label><textarea id="desc" maxlength="1000" placeholder="Krótki opis postaci..."></textarea>
+  <label for="imageFile">Obrazek (PNG, JPG, JPEG, WEBP, GIF)</label><input id="imageFile" type="file" accept="image/*">
+  <div class="row" style="margin-top:12px">
+    <button id="saveChar" class="fit">Dodaj postać</button><button id="cancelEdit" class="secondary fit hidden">Anuluj edycję</button>
+  </div>
+  <div style="height:1px;background:var(--line);margin:20px 0"></div>
+  <h2>Twoje postacie</h2><div id="charList" class="list"></div>
+  <div class="row" style="margin-top:18px">
+    <button id="finishEdit">Zapisz i przejdź dalej</button>
+    <button id="exportData" class="secondary">Eksportuj kopię</button>
+    <label class="filelabel secondary fit" for="importFile">Importuj kopię</label><input id="importFile" class="hidden" type="file" accept="application/json">
+  </div>
+</section>
+
+<section id="app">
+  <div class="panel hero">
+    <p class="status" id="status">Gotowy do losowania</p>
+    <div id="result"><div class="empty">Twoja wylosowana postać pojawi się tutaj.</div></div>
+    <button id="drawBtn">✦ LOSUJ POSTAĆ ✦</button>
+    <p class="muted" id="lockInfo">Po losowaniu kolejna próba będzie dostępna następnego dnia o 08:00.</p>
+    <div id="countdownWrap" class="hidden">Następne losowanie za: <div id="countdown">--:--:--</div></div>
+  </div>
+  <div class="panel">
+    <div class="row"><div><h2>Twoja kolekcja</h2><span class="small" id="totalCount"></span></div><button class="secondary fit" id="editBottom">Zarządzaj</button></div>
+    <div id="collection" class="list"></div>
+  </div>
+</section>
+</main>
+<footer>Dane są przechowywane lokalnie w tej przeglądarce. Eksportuj kopię, jeśli chcesz przenieść je na inne urządzenie.</footer>
+<script src="app.js"></script>
+</body></html>
